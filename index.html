@@ -4277,7 +4277,7 @@
       if (profileAuthNote) profileAuthNote.textContent = 'Redirecting you to Google securely. Please wait...';
       const { error } = await netlifySupabase.auth.signInWithOAuth({
         provider: 'google',
-        options: { redirectTo: window.location.origin + window.location.pathname }
+        options: { redirectTo: 'https://netlifyofficial.github.io/netlify/' }
       });
       if (error) {
         if (profileAuthNote) profileAuthNote.textContent = 'Google sign-in could not start: ' + error.message;
