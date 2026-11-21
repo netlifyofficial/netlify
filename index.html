@@ -2284,6 +2284,13 @@
     .auth-divider::before, .auth-divider::after { content: ""; flex: 1; height: 1px; background: var(--border-subtle); }
     .google-signout-btn { width: 100%; margin-top: 12px; padding: 11px 16px; border: 1px solid var(--border-subtle); border-radius: 12px; color: var(--text-secondary); font-weight: 700; }
     .google-signout-btn:hover { border-color: var(--primary-orange); color: var(--white); }
+    .auth-entry-button { white-space:nowrap; }
+    .auth-entry-button[hidden] { display:none !important; }
+    .profile-page-card { max-width:780px; margin:0 auto 70px; padding:clamp(20px,4vw,38px); border:1px solid var(--border-subtle); border-radius:22px; background:var(--bg-secondary); }
+    .profile-page-actions { display:flex; justify-content:flex-end; margin-top:24px; padding-top:18px; border-top:1px solid var(--border-subtle); }
+    .project-count-card { margin:16px 0; padding:18px; border:1px solid var(--border-subtle); border-radius:14px; background:rgba(255,255,255,.035); }
+    .project-count-card span { display:block; color:var(--text-muted); font-size:.7rem; letter-spacing:.08em; }
+    .project-count-card strong { display:block; color:var(--primary-orange); font-size:2rem; margin-top:4px; }
     .account-details { margin-top: 18px; text-align: left; }
     .account-details[hidden] { display:none; }
     .account-heading { display:flex; align-items:center; gap:13px; margin:8px 0 18px; }
@@ -2375,6 +2382,7 @@
         </svg>
         <span>Profile</span>
       </button>
+      <button class="profile-button auth-entry-button" id="authEntryBtn" type="button">Sign Up / Log In</button>
 
       <button class="hamburger" id="hamburgerBtn" aria-label="Toggle Menu" aria-expanded="false">
         <span></span>
@@ -2401,6 +2409,7 @@
       </svg>
       <span>Profile / Login</span>
     </button>
+    <button class="mobile-profile-button auth-entry-button" id="mobileAuthEntryBtn" type="button">Sign Up / Log In</button>
   </div>
 
   <div class="modal-backdrop profile-modal-backdrop" id="profileModal" role="dialog" aria-modal="true" aria-labelledby="profileModalTitle">
@@ -2441,7 +2450,14 @@
       </form>
       <p class="profile-auth-note" id="profileAuthNote" aria-live="polite">Sign in securely with your Google account. Google authentication is being connected.</p>
       <button class="google-signout-btn" id="googleSignOutBtn" type="button" hidden>Sign Out</button>
-      <section id="accountDetails" class="account-details" hidden aria-label="Your NETLIFY account">
+  </div>
+  </div>
+
+  <main>
+    <section id="page-profile" class="spa-page" aria-label="Your NETLIFY Profile">
+      <div class="container page-inner">
+        <div class="page-hero-header"><p class="eyebrow">YOUR ACCOUNT</p><h1>My <span class="text-gradient">Profile</span></h1><p>Manage your personal details and view your NETLIFY project activity.</p></div>
+        <div class="profile-page-card">      <section id="accountDetails" class="account-details" aria-label="Your NETLIFY account">
         <div class="account-heading"><span class="account-avatar" id="accountAvatar">N</span><div><h3 id="accountDisplayName">Your account</h3><p id="accountEmail"></p></div></div>
         <div class="account-meta-grid">
           <div class="account-meta"><span>MEMBER SINCE</span><strong id="accountJoined">—</strong></div>
@@ -2452,15 +2468,14 @@
           <label for="accountPhoneInput">Phone number</label><input id="accountPhoneInput" type="tel" autocomplete="tel" maxlength="30" placeholder="Your phone number">
           <button class="btn btn-primary profile-submit" type="submit">Save profile</button>
         </form>
-        <div class="account-projects"><h3>Your projects</h3><p class="account-projects-hint">Add projects you've worked on with NETLIFY. Only you can see these entries.</p>
+        <div class="account-projects"><h3>Your projects</h3><div class="project-count-card"><span>TOTAL PROJECTS</span><strong id="accountProjectCount">0</strong></div><p class="account-projects-hint">Add projects you've worked on with NETLIFY. Only you can see these entries.</p>
           <form id="accountProjectForm" class="account-project-form"><input id="accountProjectTitle" type="text" maxlength="120" placeholder="Project name" required><textarea id="accountProjectDescription" rows="2" maxlength="500" placeholder="Short description (optional)"></textarea><button class="btn btn-primary" type="submit">Add project</button></form>
           <div id="accountProjectList" class="account-project-list" aria-live="polite"><p>No projects added yet.</p></div>
         </div>
       </section>
-    </div>
-  </div>
-
-  <main>
+  <div class="profile-page-actions"><button class="google-signout-btn" id="googleSignOutBtn" type="button">Log Out</button></div></div>
+      </div>
+    </section>
     <!-- ======================================================================
          PAGE 1: HOME (#home)
          ====================================================================== -->
@@ -3677,7 +3692,7 @@
       /* ----------------------------------------------------------------------
          2. MULTI-PAGE SPA ROUTER (SEPARATE PAGES IN ONE HTML FILE)
          ---------------------------------------------------------------------- */
-      const validRoutes = ['home', 'about', 'services', 'gallery', 'tutorials', 'feedback', 'contact'];
+      const validRoutes = ['home', 'about', 'services', 'gallery', 'tutorials', 'feedback', 'contact', 'profile'];
       const pages = document.querySelectorAll('.spa-page');
       const navLinks = document.querySelectorAll('.nav-link');
       const mobileLinks = document.querySelectorAll('.mobile-nav-link');
@@ -3715,6 +3730,11 @@
 
       function navigateTo(route, updateHash = true) {
         const targetRoute = validRoutes.includes(route) ? route : 'home';
+        if (targetRoute === 'profile' && !window.netlifyCurrentUser) {
+          document.getElementById('profileModal')?.classList.add('open');
+          document.body.style.overflow = 'hidden';
+          return;
+        }
 
         // Switch visible page view
         pages.forEach(page => {
@@ -3787,6 +3807,8 @@
       const profileModal = document.getElementById('profileModal');
       const profileBtn = document.getElementById('profileBtn');
       const mobileProfileBtn = document.getElementById('mobileProfileBtn');
+    const authEntryBtn = document.getElementById('authEntryBtn');
+    const mobileAuthEntryBtn = document.getElementById('mobileAuthEntryBtn');
       const profileModalClose = document.getElementById('profileModalClose');
       const loginTab = document.getElementById('loginTab');
       const signupTab = document.getElementById('signupTab');
@@ -4310,6 +4332,8 @@
       document.getElementById('accountNameInput').value = profile?.full_name || user.user_metadata?.full_name || user.user_metadata?.name || '';
       document.getElementById('accountPhoneInput').value = profile?.phone || '';
       const { data: projects, error } = await netlifySupabase.from('user_projects').select('id,title,description,created_at').eq('user_id',user.id).order('created_at',{ascending:false});
+      const countEl = document.getElementById('accountProjectCount');
+      if (countEl) countEl.textContent = String(projects?.length || 0);
       if (error) {
         accountProjectList.innerHTML = '<p>Could not load projects right now.</p>';
       } else if (!projects?.length) {
@@ -4327,21 +4351,20 @@
 
     function updateAccountUI(user) {
       const signedIn = Boolean(user);
-      const label = signedIn ? 'Account' : 'Profile';
+      window.netlifyCurrentUser = user || null;
       const navLabel = profileBtn?.querySelector('span');
       const mobileLabel = mobileProfileBtn?.querySelector('span');
-      if (navLabel) navLabel.textContent = label;
-      if (mobileLabel) mobileLabel.textContent = signedIn ? 'My Account' : 'Profile / Login';
+      if (navLabel) navLabel.textContent = 'Profile';
+      if (mobileLabel) mobileLabel.textContent = 'Profile';
+      if (authEntryBtn) authEntryBtn.hidden = signedIn;
+      if (mobileAuthEntryBtn) mobileAuthEntryBtn.hidden = signedIn;
       if (googleSignInBtn) googleSignInBtn.hidden = signedIn;
-      if (googleSignOutBtn) googleSignOutBtn.hidden = !signedIn;
       if (accountDetails) accountDetails.hidden = !signedIn;
       if (authTabs) authTabs.hidden = signedIn;
       if (loginForm) loginForm.hidden = signedIn;
       if (signupForm) signupForm.hidden = signedIn;
-      if (profileAuthNote) {
-        profileAuthNote.textContent = signedIn ? 'You are signed in to your NETLIFY account.' : 'Sign in securely with your Google account.';
-      }
-      if (signedIn) loadAccountDetails(user);
+      if (profileAuthNote) profileAuthNote.textContent = signedIn ? 'You are signed in to your NETLIFY account.' : 'Sign in securely with your Google account.';
+      if (signedIn && window.location.hash === '#profile') loadAccountDetails(user);
     }
 
     accountProfileForm?.addEventListener('submit', async event => {
@@ -4381,6 +4404,33 @@
       }
     });
 
+    authEntryBtn?.addEventListener('click', () => {
+      document.getElementById('profileModal')?.classList.add('open');
+      document.body.style.overflow = 'hidden';
+    });
+    mobileAuthEntryBtn?.addEventListener('click', () => {
+      document.getElementById('mobileMenu')?.classList.remove('open');
+      document.getElementById('profileModal')?.classList.add('open');
+      document.body.style.overflow = 'hidden';
+    });
+    profileBtn?.addEventListener('click', () => {
+      if (window.netlifyCurrentUser) {
+        document.getElementById('profileModal')?.classList.remove('open');
+        document.body.style.overflow = '';
+        window.location.hash = 'profile';
+      } else {
+        document.getElementById('profileModal')?.classList.add('open');
+        document.body.style.overflow = 'hidden';
+      }
+    });
+    mobileProfileBtn?.addEventListener('click', () => {
+      document.getElementById('mobileMenu')?.classList.remove('open');
+      if (window.netlifyCurrentUser) window.location.hash = 'profile';
+      else {
+        document.getElementById('profileModal')?.classList.add('open');
+        document.body.style.overflow = 'hidden';
+      }
+    });
     googleSignOutBtn?.addEventListener('click', async () => {
       googleSignOutBtn.disabled = true;
       const { error } = await netlifySupabase.auth.signOut();
