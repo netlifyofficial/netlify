@@ -3837,8 +3837,6 @@
         signupTab.setAttribute('aria-selected', String(!isLogin));
         profileAuthNote.textContent = 'Account login will be activated when an authentication service is connected.';
       }
-      profileBtn.addEventListener('click', openProfileModal);
-      mobileProfileBtn.addEventListener('click', openProfileModal);
       profileModalClose.addEventListener('click', closeProfileModal);
       profileModal.addEventListener('click', (event) => { if (event.target === profileModal) closeProfileModal(); });
       document.addEventListener('keydown', (event) => { if (event.key === 'Escape' && profileModal.classList.contains('open')) closeProfileModal(); });
@@ -4435,6 +4433,7 @@
       googleSignOutBtn.disabled = true;
       const { error } = await netlifySupabase.auth.signOut();
       if (error && profileAuthNote) profileAuthNote.textContent = 'Could not sign out: ' + error.message;
+      if (!error && window.location.hash === '#profile') window.location.hash = 'home';
       googleSignOutBtn.disabled = false;
     });
 
