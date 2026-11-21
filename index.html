@@ -2276,6 +2276,14 @@
     .profile-modal-heading .eyebrow { color: var(--primary-orange); font-size: .72rem; font-weight: 800; letter-spacing: .13em; margin-bottom: 9px; }
     .profile-modal-heading h2 { font-size: 1.65rem; margin-bottom: 9px; }
     .profile-modal-heading > p:last-child { color: var(--text-secondary); font-size: .9rem; }
+    .google-signin-btn { width: 100%; display: flex; align-items: center; justify-content: center; gap: 12px; padding: 13px 16px; min-height: 50px; border: 1px solid rgba(255,255,255,.16); border-radius: 13px; background: #FFFFFF; color: #202124; font: 700 .94rem var(--font-body); transition: transform .2s ease, box-shadow .2s ease; }
+    .google-signin-btn:hover { transform: translateY(-1px); box-shadow: 0 8px 22px rgba(0,0,0,.22); }
+    .google-signin-btn:disabled { opacity: .65; cursor: wait; }
+    .google-signin-btn svg { width: 19px; height: 19px; flex: 0 0 auto; }
+    .auth-divider { display: flex; align-items: center; gap: 12px; margin: 18px 0; color: var(--text-muted); font-size: .72rem; font-weight: 700; letter-spacing: .1em; }
+    .auth-divider::before, .auth-divider::after { content: ""; flex: 1; height: 1px; background: var(--border-subtle); }
+    .google-signout-btn { width: 100%; margin-top: 12px; padding: 11px 16px; border: 1px solid var(--border-subtle); border-radius: 12px; color: var(--text-secondary); font-weight: 700; }
+    .google-signout-btn:hover { border-color: var(--primary-orange); color: var(--white); }
     .profile-auth-tabs { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; padding: 5px; border-radius: 14px; background: rgba(255,255,255,.045); margin-bottom: 22px; }
     .profile-auth-tab { padding: 11px; border-radius: 10px; color: var(--text-secondary); font-weight: 700; transition: .2s ease; }
     .profile-auth-tab.active { color: var(--white); background: var(--primary-orange); }
@@ -2387,6 +2395,11 @@
         <h2 id="profileModalTitle">Welcome to NETLIFY</h2>
         <p>Sign in or create an account to access your profile.</p>
       </div>
+      <button class="google-signin-btn" id="googleSignInBtn" type="button">
+        <svg viewBox="0 0 48 48" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.76 7.18l7.73 6C44.42 37.96 46.98 31.9 46.98 24.55z"/><path fill="#FBBC05" d="M10.53 28.59A14.4 14.4 0 0 1 9.75 24c0-1.59.27-3.13.76-4.59l-7.98-6.19A23.9 23.9 0 0 0 0 24c0 3.87.93 7.52 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.91-5.8l-7.73-6c-2.14 1.45-4.89 2.3-8.18 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
+        <span>Continue with Google</span>
+      </button>
+      <div class="auth-divider"><span>OR CONTINUE WITH EMAIL</span></div>
       <div class="profile-auth-tabs" role="tablist" aria-label="Account access">
         <button class="profile-auth-tab active" id="loginTab" type="button" role="tab" aria-selected="true">Log In</button>
         <button class="profile-auth-tab" id="signupTab" type="button" role="tab" aria-selected="false">Sign Up</button>
@@ -2407,7 +2420,8 @@
         <input id="profileSignupPassword" type="password" placeholder="Create a password" autocomplete="new-password" minlength="8" required>
         <button class="btn btn-primary profile-submit" type="submit">Create Account</button>
       </form>
-      <p class="profile-auth-note" id="profileAuthNote" aria-live="polite">Account login will be activated when an authentication service is connected.</p>
+      <p class="profile-auth-note" id="profileAuthNote" aria-live="polite">Sign in securely with your Google account. Google authentication is being connected.</p>
+      <button class="google-signout-btn" id="googleSignOutBtn" type="button" hidden>Sign Out</button>
     </div>
   </div>
 
@@ -4226,6 +4240,69 @@
       document.getElementById('backToTopBtn').addEventListener('click', () => {
         window.scrollTo({ top: 0, behavior: 'smooth' });
       });
+    });
+  </script>
+  <script type="module">
+    import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.4/+esm';
+
+    const SUPABASE_URL = 'https://dzdkctmizmqyquwquitz.supabase.co';
+    const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_sDnRS197l2iy1CQS_14uSg_zH8e6Y7N';
+    const netlifySupabase = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
+
+    const googleSignInBtn = document.getElementById('googleSignInBtn');
+    const googleSignOutBtn = document.getElementById('googleSignOutBtn');
+    const profileAuthNote = document.getElementById('profileAuthNote');
+    const profileBtn = document.getElementById('profileBtn');
+    const mobileProfileBtn = document.getElementById('mobileProfileBtn');
+
+    function updateAccountUI(user) {
+      const signedIn = Boolean(user);
+      const label = signedIn ? 'Account' : 'Profile';
+      const navLabel = profileBtn?.querySelector('span');
+      const mobileLabel = mobileProfileBtn?.querySelector('span');
+      if (navLabel) navLabel.textContent = label;
+      if (mobileLabel) mobileLabel.textContent = signedIn ? 'My Account' : 'Profile / Login';
+      if (googleSignInBtn) googleSignInBtn.hidden = signedIn;
+      if (googleSignOutBtn) googleSignOutBtn.hidden = !signedIn;
+      if (profileAuthNote) {
+        profileAuthNote.textContent = signedIn
+          ? 'Signed in as ' + (user.email || user.user_metadata?.full_name || 'your Google account') + '. Your NETLIFY account is active.'
+          : 'Sign in securely with your Google account.';
+      }
+    }
+
+    googleSignInBtn?.addEventListener('click', async () => {
+      googleSignInBtn.disabled = true;
+      googleSignInBtn.querySelector('span').textContent = 'Connecting to Google...';
+      if (profileAuthNote) profileAuthNote.textContent = 'Redirecting you to Google securely. Please wait...';
+      const { error } = await netlifySupabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: { redirectTo: window.location.origin + window.location.pathname }
+      });
+      if (error) {
+        if (profileAuthNote) profileAuthNote.textContent = 'Google sign-in could not start: ' + error.message;
+        googleSignInBtn.disabled = false;
+        googleSignInBtn.querySelector('span').textContent = 'Continue with Google';
+      }
+    });
+
+    googleSignOutBtn?.addEventListener('click', async () => {
+      googleSignOutBtn.disabled = true;
+      const { error } = await netlifySupabase.auth.signOut();
+      if (error && profileAuthNote) profileAuthNote.textContent = 'Could not sign out: ' + error.message;
+      googleSignOutBtn.disabled = false;
+    });
+
+    netlifySupabase.auth.getSession().then(({ data, error }) => {
+      if (error) {
+        if (profileAuthNote) profileAuthNote.textContent = 'Unable to check your session. Please refresh and try again.';
+        return;
+      }
+      updateAccountUI(data.session?.user ?? null);
+    });
+
+    netlifySupabase.auth.onAuthStateChange((_event, session) => {
+      updateAccountUI(session?.user ?? null);
     });
   </script>
 </body>
