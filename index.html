@@ -2284,6 +2284,25 @@
     .auth-divider::before, .auth-divider::after { content: ""; flex: 1; height: 1px; background: var(--border-subtle); }
     .google-signout-btn { width: 100%; margin-top: 12px; padding: 11px 16px; border: 1px solid var(--border-subtle); border-radius: 12px; color: var(--text-secondary); font-weight: 700; }
     .google-signout-btn:hover { border-color: var(--primary-orange); color: var(--white); }
+    .account-details { margin-top: 18px; text-align: left; }
+    .account-details[hidden] { display:none; }
+    .account-heading { display:flex; align-items:center; gap:13px; margin:8px 0 18px; }
+    .account-avatar { width:48px; height:48px; display:grid; place-items:center; border-radius:50%; background:var(--primary-orange); color:#fff; font-size:1.2rem; font-weight:800; }
+    .account-heading h3,.account-projects h3 { margin:0; color:var(--white); font-size:1rem; }
+    .account-heading p { margin:4px 0 0; color:var(--text-secondary); font-size:.8rem; overflow-wrap:anywhere; }
+    .account-meta-grid { display:grid; grid-template-columns:1fr 1fr; gap:9px; margin-bottom:16px; }
+    .account-meta { min-width:0; padding:11px; border:1px solid var(--border-subtle); border-radius:11px; background:rgba(255,255,255,.035); }
+    .account-meta span { display:block; color:var(--text-muted); font-size:.62rem; letter-spacing:.08em; margin-bottom:5px; }
+    .account-meta strong { color:var(--white); font-size:.78rem; overflow-wrap:anywhere; }
+    .account-projects { margin-top:22px; padding-top:18px; border-top:1px solid var(--border-subtle); }
+    .account-projects-hint { color:var(--text-secondary); font-size:.78rem; line-height:1.5; }
+    .account-project-form { display:grid; gap:9px; margin:12px 0; }
+    .account-project-form input,.account-project-form textarea { width:100%; padding:11px 12px; border:1px solid var(--border-subtle); border-radius:10px; background:var(--bg-secondary); color:var(--white); font:inherit; }
+    .account-project-list { display:grid; gap:9px; margin-top:12px; }
+    .account-project-item { padding:12px; border:1px solid var(--border-subtle); border-radius:11px; }
+    .account-project-item strong { display:block; color:var(--white); font-size:.88rem; }
+    .account-project-item p { margin:5px 0; color:var(--text-secondary); font-size:.78rem; }
+    .account-project-item small { color:var(--text-muted); font-size:.68rem; }
     .profile-auth-tabs { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; padding: 5px; border-radius: 14px; background: rgba(255,255,255,.045); margin-bottom: 22px; }
     .profile-auth-tab { padding: 11px; border-radius: 10px; color: var(--text-secondary); font-weight: 700; transition: .2s ease; }
     .profile-auth-tab.active { color: var(--white); background: var(--primary-orange); }
@@ -2422,6 +2441,22 @@
       </form>
       <p class="profile-auth-note" id="profileAuthNote" aria-live="polite">Sign in securely with your Google account. Google authentication is being connected.</p>
       <button class="google-signout-btn" id="googleSignOutBtn" type="button" hidden>Sign Out</button>
+      <section id="accountDetails" class="account-details" hidden aria-label="Your NETLIFY account">
+        <div class="account-heading"><span class="account-avatar" id="accountAvatar">N</span><div><h3 id="accountDisplayName">Your account</h3><p id="accountEmail"></p></div></div>
+        <div class="account-meta-grid">
+          <div class="account-meta"><span>MEMBER SINCE</span><strong id="accountJoined">—</strong></div>
+          <div class="account-meta"><span>ACCOUNT ID</span><strong id="accountIdShort">—</strong></div>
+        </div>
+        <form id="accountProfileForm" class="profile-auth-form">
+          <label for="accountNameInput">Full name</label><input id="accountNameInput" type="text" autocomplete="name" maxlength="100" placeholder="Your full name">
+          <label for="accountPhoneInput">Phone number</label><input id="accountPhoneInput" type="tel" autocomplete="tel" maxlength="30" placeholder="Your phone number">
+          <button class="btn btn-primary profile-submit" type="submit">Save profile</button>
+        </form>
+        <div class="account-projects"><h3>Your projects</h3><p class="account-projects-hint">Add projects you've worked on with NETLIFY. Only you can see these entries.</p>
+          <form id="accountProjectForm" class="account-project-form"><input id="accountProjectTitle" type="text" maxlength="120" placeholder="Project name" required><textarea id="accountProjectDescription" rows="2" maxlength="500" placeholder="Short description (optional)"></textarea><button class="btn btn-primary" type="submit">Add project</button></form>
+          <div id="accountProjectList" class="account-project-list" aria-live="polite"><p>No projects added yet.</p></div>
+        </div>
+      </section>
     </div>
   </div>
 
@@ -4255,6 +4290,41 @@
     const profileBtn = document.getElementById('profileBtn');
     const mobileProfileBtn = document.getElementById('mobileProfileBtn');
 
+    const accountDetails = document.getElementById('accountDetails');
+    const authTabs = document.querySelector('.profile-auth-tabs');
+    const loginForm = document.getElementById('profileLoginForm');
+    const signupForm = document.getElementById('profileSignupForm');
+    const accountProfileForm = document.getElementById('accountProfileForm');
+    const accountProjectForm = document.getElementById('accountProjectForm');
+    const accountProjectList = document.getElementById('accountProjectList');
+
+    async function loadAccountDetails(user) {
+      if (!user) return;
+      const { data: profile } = await netlifySupabase.from('profiles').select('full_name, phone, created_at').eq('id', user.id).maybeSingle();
+      const name = profile?.full_name || user.user_metadata?.full_name || user.user_metadata?.name || 'NETLIFY member';
+      document.getElementById('accountDisplayName').textContent = name;
+      document.getElementById('accountAvatar').textContent = name.trim().charAt(0).toUpperCase() || 'N';
+      document.getElementById('accountEmail').textContent = user.email || '';
+      document.getElementById('accountJoined').textContent = new Date(user.created_at).toLocaleDateString(undefined,{year:'numeric',month:'long',day:'numeric'});
+      document.getElementById('accountIdShort').textContent = user.id.slice(0,8) + '…';
+      document.getElementById('accountNameInput').value = profile?.full_name || user.user_metadata?.full_name || user.user_metadata?.name || '';
+      document.getElementById('accountPhoneInput').value = profile?.phone || '';
+      const { data: projects, error } = await netlifySupabase.from('user_projects').select('id,title,description,created_at').eq('user_id',user.id).order('created_at',{ascending:false});
+      if (error) {
+        accountProjectList.innerHTML = '<p>Could not load projects right now.</p>';
+      } else if (!projects?.length) {
+        accountProjectList.innerHTML = '<p>No projects added yet.</p>';
+      } else {
+        accountProjectList.replaceChildren(...projects.map(project => {
+          const item=document.createElement('article'); item.className='account-project-item';
+          const title=document.createElement('strong'); title.textContent=project.title;
+          const desc=document.createElement('p'); desc.textContent=project.description || 'No description added.';
+          const date=document.createElement('small'); date.textContent='Added '+new Date(project.created_at).toLocaleDateString();
+          item.append(title,desc,date); return item;
+        }));
+      }
+    }
+
     function updateAccountUI(user) {
       const signedIn = Boolean(user);
       const label = signedIn ? 'Account' : 'Profile';
@@ -4264,12 +4334,37 @@
       if (mobileLabel) mobileLabel.textContent = signedIn ? 'My Account' : 'Profile / Login';
       if (googleSignInBtn) googleSignInBtn.hidden = signedIn;
       if (googleSignOutBtn) googleSignOutBtn.hidden = !signedIn;
+      if (accountDetails) accountDetails.hidden = !signedIn;
+      if (authTabs) authTabs.hidden = signedIn;
+      if (loginForm) loginForm.hidden = signedIn;
+      if (signupForm) signupForm.hidden = signedIn;
       if (profileAuthNote) {
-        profileAuthNote.textContent = signedIn
-          ? 'Signed in as ' + (user.email || user.user_metadata?.full_name || 'your Google account') + '. Your NETLIFY account is active.'
-          : 'Sign in securely with your Google account.';
+        profileAuthNote.textContent = signedIn ? 'You are signed in to your NETLIFY account.' : 'Sign in securely with your Google account.';
       }
+      if (signedIn) loadAccountDetails(user);
     }
+
+    accountProfileForm?.addEventListener('submit', async event => {
+      event.preventDefault();
+      const { data:{user} } = await netlifySupabase.auth.getUser();
+      if (!user) return;
+      const full_name=document.getElementById('accountNameInput').value.trim();
+      const phone=document.getElementById('accountPhoneInput').value.trim();
+      const {error}=await netlifySupabase.from('profiles').upsert({id:user.id,full_name,phone,updated_at:new Date().toISOString()});
+      if (profileAuthNote) profileAuthNote.textContent=error ? 'Could not save profile: '+error.message : 'Your profile has been saved.';
+      if (!error) loadAccountDetails(user);
+    });
+
+    accountProjectForm?.addEventListener('submit', async event => {
+      event.preventDefault();
+      const { data:{user} } = await netlifySupabase.auth.getUser();
+      if (!user) return;
+      const title=document.getElementById('accountProjectTitle').value.trim();
+      const description=document.getElementById('accountProjectDescription').value.trim();
+      const {error}=await netlifySupabase.from('user_projects').insert({user_id:user.id,title,description});
+      if (profileAuthNote) profileAuthNote.textContent=error ? 'Could not add project: '+error.message : 'Project added to your account.';
+      if (!error) { accountProjectForm.reset(); loadAccountDetails(user); }
+    });
 
     googleSignInBtn?.addEventListener('click', async () => {
       googleSignInBtn.disabled = true;
